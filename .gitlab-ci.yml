@@ -5,12 +5,14 @@ before_script:
 build_image:
   script:
     - docker-compose -f docker-compose.yml build
+  stage: build_image
   tags:
     - shell
-
+  
 push_image:
   script:
     - docker-compose -f docker-compose.yml push
+  stage: push_image
   tags:
     - shell
 
@@ -23,3 +25,4 @@ stages:
   - build_image
   - push_image
   # - deploy
+
