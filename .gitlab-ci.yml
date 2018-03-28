@@ -30,6 +30,7 @@ push_image:
 
 deploy:
   script:
+    - export TAG="${CI_BUILD_REF_NAME}"
     - docker stack deploy -c docker-compose.yml writer
   stage: deploy
   tags:
