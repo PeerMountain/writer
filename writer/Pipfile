@@ -7,6 +7,7 @@ name = "pypi"
 
 [packages]
 
+"e2919c3" = {path = "./himalaya-models", editable = true}
 kombu = "*"
 msgpack-python = "*"
 happybase = "*"

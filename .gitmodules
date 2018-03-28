@@ -1,0 +1,3 @@
+[submodule "writer/himalaya-models"]
+	path = writer/himalaya-models
+	url = ../../teleferic-mvp/himalaya-models
