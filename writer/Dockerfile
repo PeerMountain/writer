@@ -5,7 +5,7 @@ RUN ln -sf $(which python) /bin/python
 
 WORKDIR /usr/src/app
 COPY Pipfile* ./
-COPY himalaya-models himalaya-models/
+# COPY himalaya-models himalaya-models/
 
 RUN pip install pipenv==9.0.1
 RUN pipenv install --system
