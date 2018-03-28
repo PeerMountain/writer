@@ -4,17 +4,26 @@ before_script:
 
 build_image:
   script:
+    - export TAG="${CI_BUILD_REF_NAME}"
     - docker-compose -f docker-compose.yml build
   stage: build_image
   tags:
     - shell
+  only:
+    - tags
+    - triggers
   
 push_image:
   script:
+    - export TAG="${CI_BUILD_REF_NAME}"
     - docker-compose -f docker-compose.yml push
   stage: push_image
   tags:
     - shell
+  only:
+    - tags
+    - triggers
+
 
 # deploy:
 #   - docker stack deploy -c docker-compose.yml writer
