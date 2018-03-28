@@ -1,0 +1,23 @@
+before_script:
+  - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
+
+
+build_image:
+  - docker-compose -f docker-compose.yml build
+  tags:
+    - shell
+
+push_image:
+  - docker-compose -f docker-compose.yml push
+  tags:
+    - shell
+
+# deploy:
+#   - docker stack deploy -c docker-compose.yml writer
+#   tags:
+#     - shell
+
+stages:
+  - build_image
+  - push_image
+  # - deploy

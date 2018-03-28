@@ -1,0 +1,35 @@
+version: "3.4"
+
+services:
+  writer:
+    image: 'peer-mountain01:5005/mvp/writer:${TAG-latest}'
+    build:
+      context: ./writer/
+      target: production
+    environment:
+      - BROKER_URL=amqp://guest:guest@/rabbitmq-proxy/
+      - HBASE_PORT=9090
+      - ES_URL=elasticsearch-proxy
+    networks:
+      - writer
+      - rabbitmq
+      - elasticsearch
+
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+      restart_policy:
+        condition: 'on-failure'
+
+networks:
+  rabbitmq:
+    external: true
+  writer:
+    external: true
+  elasticsearch:
+    external: true
