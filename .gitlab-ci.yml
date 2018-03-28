@@ -24,14 +24,18 @@ push_image:
     - tags
     - triggers
 
+deploy:
+  script:
+    - docker stack deploy -c docker-compose.yml writer
+  stage: deploy
+  tags:
+    - shell
+  only:
+    - tags
+    - triggers
 
-# deploy:
-#   - docker stack deploy -c docker-compose.yml writer
-#   tags:
-#     - shell
 
 stages:
   - build_image
   - push_image
-  # - deploy
-
+  - deploy
