@@ -3,12 +3,14 @@ before_script:
 
 
 build_image:
-  - docker-compose -f docker-compose.yml build
+  script:
+    - docker-compose -f docker-compose.yml build
   tags:
     - shell
 
 push_image:
-  - docker-compose -f docker-compose.yml push
+  script:
+    - docker-compose -f docker-compose.yml push
   tags:
     - shell
 
