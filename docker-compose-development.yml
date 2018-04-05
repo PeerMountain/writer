@@ -3,6 +3,7 @@ version: "3.4"
 services:
   writer:
     image: 'writer:${TAG-latest}'
+    command: 'python writer/consumer.py'
     build:
       context: ./writer
       target: development
