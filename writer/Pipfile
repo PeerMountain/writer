@@ -7,14 +7,15 @@ name = "pypi"
 
 [packages]
 
-"e2919c3" = {path = "./himalaya-models", editable = true}
+"e2919c4" = {path = "./himalaya-models", editable = true}
 kombu = "*"
-msgpack-python = "*"
+u-msgpack-python = "*"
 happybase = "*"
 elasticsearch-dsl = "*"
 
 
 [dev-packages]
+ipython = "*"
 
 
 [requires]
