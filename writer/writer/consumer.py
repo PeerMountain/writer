@@ -1,9 +1,10 @@
 import datetime
 import logging
 import logging.config
+from base64 import b64decode
 
 from kombu.mixins import ConsumerMixin
-from msgpack import unpackb, packb
+from umsgpack import unpackb, packb
 from himalaya_models import Message, Persona
 
 from config import BROKER_URL, LOGGING
@@ -35,40 +36,28 @@ class Worker(ConsumerMixin):
             callbacks=[self.process_task]
         )]
 
-    def process_envelope(self, envelope):
-        """
-        Parse the envelope to find its type and call the correct saved methods.
-        """
-
-        unpacked_envelope = unpackb(envelope)
-        type = unpacked_envelope.get(b'messageType')
-
-        if type in [MessageTypes.SERVICE, MessageTypes.DELEGATION]:
-            logger.error(f'Message Type {type} not implemented')
-
-        if type in [MessageTypes.INVITE]:
-            self.save_message(envelope)
-
-        if type == MessageTypes.REGISTRATION:
-            self.save_persona(envelope)
-            self.save_message(envelope)
-
-        if type in [MessageTypes.ASSERTION, MessageTypes.ATTESTATION]:
-            self.save_message(envelope)
-
     def save_persona(self, envelope):
         """
         Saves a Persona from a Registration message.
         """
 
         unpacked_envelope = unpackb(envelope)
+        unpacked_message = unpackb(b64decode(unpacked_envelope.get('message')))
+        unpacked_body = unpackb(b64decode(unpacked_message.get('messageBody')))
 
-        address = unpacked_envelope.get(b'sender').decode()
-        pubkey = unpacked_envelope.get(b'message').get(b'messageBody').get(b'publicKey').decode()
-        nickname = unpacked_envelope.get(b'message').get(b'messageBody').get(b'publicNickname').decode()
+        address = unpacked_envelope.get('sender')
+        pubkey = unpacked_body.get('publicKey')
+        nickname = unpacked_body.get('publicNickname')
 
-        persona = Persona(address=address, pubkey=pubkey, nickname=nickname)
-        persona.save()
+        # Workaround since INVITE and REGISTRATION are actually
+        # sharing the same type on the Python client
+        if address and pubkey and nickname:
+            persona = Persona(
+                address=address,
+                pubkey=pubkey,
+                nickname=nickname,
+            )
+            persona.save()
 
     def save_message(self, envelope):
         """
@@ -77,34 +66,65 @@ class Worker(ConsumerMixin):
 
         unpacked_envelope = unpackb(envelope)
 
-        address = unpacked_envelope.get(b'sender').decode()
+        address = unpacked_envelope.get('sender')
         persona = Persona.get(address)
 
         # There's no ACL or Objects on Invite and Registration
         # Default to an empty string
-        acl = packb(unpacked_envelope.get(b'ACL')) or ''
-        objects = packb(unpacked_envelope.get(b'objects')) or ''
+        acl = packb(unpacked_envelope.get('ACL')) or ''
+        objects = packb(unpacked_envelope.get('objects')) or ''
+
+        message_type = str(unpacked_envelope.get('messageType'))
+        message_hash = unpacked_envelope.get('messageHash')
+        message_signature = unpackb(b64decode(unpacked_envelope.get('messageSign')))
+        signature = message_signature.get('signature')
+        timestamp = message_signature.get('timestamp')
+        dossier_hash = unpacked_envelope.get('dossierHash')
+        body_hash = unpacked_envelope.get('bodyHash')
+        message = unpacked_envelope.get('message')
 
         message = Message(
             persona_sender=persona.address,
             persona_pubkey=persona.pubkey,
             persona_nickname=persona.nickname,
-            type=str(unpacked_envelope.get(b'messageType')),
-            hash=unpacked_envelope.get(b'messageHash').decode(),
-            signature=unpacked_envelope.get(b'messageSign').get(b'signature').decode(),
-            timestamp=unpacked_envelope.get(b'messageSign').get(b'timestamp').decode(),
-            dossier_hash=unpacked_envelope.get(b'dossierHash').decode(),
-            body_hash=unpacked_envelope.get(b'bodyHash').decode(),
+            type=message_type,
+            hash=message_hash,
+            signature=signature,
+            timestamp=timestamp,
+            dossier_hash=dossier_hash,
+            body_hash=body_hash,
             acl=acl,
             objects=objects,
-            message=unpacked_envelope.get(b'message').decode(),
+            message=message,
             created_at=datetime.datetime.now().isoformat(),
         ) 
         message.save()
 
     def process_task(self, body, message):
+        """
+        Parse the envelope to find its type and call the correct saved methods.
+        """
+
         logger.info(f'Received message with body={body}')
-        self.process_envelope(body)
+
+        unpacked_envelope = unpackb(body)
+        type = unpacked_envelope.get('messageType')
+
+        if type in [MessageTypes.SERVICE, MessageTypes.DELEGATION]:
+            logger.error(f'Message Type {type} not implemented')
+
+        if type in [MessageTypes.INVITE]:
+            self.save_message(body)
+
+        if type == MessageTypes.REGISTRATION:
+            self.save_persona(body)
+            self.save_message(body)
+
+        if type in [MessageTypes.ASSERTION, MessageTypes.ATTESTATION]:
+            self.save_message(body)
+
+        message.ack()
+
         logger.info(f'Message processed')
 
 
