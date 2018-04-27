@@ -7,7 +7,7 @@ services:
       context: ./writer/
       target: production
     environment:
-      - BROKER_URL=amqp://guest:guest@/rabbitmq-proxy/
+      - BROKER_URL=amqp://guest:guest@/rabbitmq-proxy//
       - HBASE_PORT=9999
       - ES_URL=elasticsearch-proxy
     networks:

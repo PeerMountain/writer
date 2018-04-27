@@ -32,7 +32,6 @@ class Worker(ConsumerMixin):
     def get_consumers(self, Consumer, channel):
         return [Consumer(
             queues=writer_queue,
-            accept=['msgpack'],
             callbacks=[self.process_task]
         )]
 
